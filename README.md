@@ -5,16 +5,23 @@ Written by: J.Saroun, saroun@ujf.cas.cz
 
 Licence: see LICENSE
 
-- allows to use PGPLOT with interactive graphics on Windows 
-- requires mingw-w64 gcc compiler suite to compile 
-- developed and tested on Windows 10, 64 bit
-- uses a new JSDRIV device server (analogy to pgxwin_server on linux)
+## Features
+
+- Allows to use PGPLOT interactive graphics on Windows 
+- Requires mingw-w64 gcc compiler suite to compile 
+- Developed and tested on Windows 10, 64 bit
+- Uses a new JSDRIV device server (analogy to pgxwin_server on Linux)
+
 =====================================================================
 
 ## Package contents
 
 ### ./jsdriv
-Source files for compiling jsdrivlib.dll and jsdriv_server.exe (with Lazarus project files) 
+Lazarus project files which allow to build:
+
+`jsdrivlib.dll`, a library to be linked with client application
+
+`jsdriv_server.exe `, a server providing persistent graphics windows (similar to pgxwin_server on Linux) 
 
 ### ./pgplot_binding 
 
