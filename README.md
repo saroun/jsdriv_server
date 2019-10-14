@@ -19,12 +19,11 @@ Licence: see LICENSE
 ### ./jsdriv
 Lazarus project files which allow to build:
 
-`jsdrivlib.dll`, a library to be linked with client application
+`jsdrivlib.dll`, a library dynamically loaded by `libpgplot.dll` (linked with client applications)
 
 `jsdriv_server.exe `, a server providing persistent graphics windows (similar to pgxwin_server on Linux) 
 
 ### ./pgplot_binding 
-
 Extensions to PGPLOT needed to create libpgplot.dll which supports the JSDRIV device. 
 	
 `sys_mingw` - Source files to be be merged with the original PGPLOT source distribution
@@ -36,30 +35,25 @@ Extensions to PGPLOT needed to create libpgplot.dll which supports the JSDRIV de
 `grexec.f` - Generated driver function GREXEC for the NULL, PSDRIV and JSDRIV devices.
 
 `compile.bat` - A batch file for compilig PGPLOT. Call from command line:
-
-* `compile`       # compile libpgplot.dll and its import library: libpgplot.lib
-* `compile prog`  # compile demo examples
-* `compile clean` # remove all object files
-* `compile erase` # remove all object files + all executables
 	
 
 ## Compiling JSDRIV server and client library
 
 - Install Lazarus FreePascal RAD (https://www.lazarus-ide.org/) if you don't have it already
-- Build the project "jsdrivlib.lpr" to create the client library, jsdrivlib.dll.
-- Build the project "jsdriv_server.lpr" to create the server, jsdriv_server.exe
+- Build the project `jsdrivlib.lpr` to create the client library, `jsdrivlib.dll`.
+- Build the project `jsdriv_server.lpr` to create the server, `jsdriv_server.exe`
 
 ## Compiling PGPLOT with JSDRIV support:
 
-(paths are relative to the ./pgplot_binding folder)
+(paths are relative to the `./pgplot_binding` folder)
 - Download the original PGPLOT ver. 5.2 source files from http://www.astro.caltech.edu/~tjp/pgplot/)  
-- Create a directory ./src and extract PGPLOT sources to it
-- Open Windows command line and make ./tgt your current directory
+- Create a directory `./src` and extract PGPLOT sources to it
+- Open Windows command line and make `./tgt` your current directory
 - Make sure you call the correct gcc compiler from mingw-w64 distribution, try `> gcc --version`
-- Copy the folder ./sys_mingw to the PGPLOT distribution in ./src
-- Run "compile.bat:" to build libpgplot.dll
-- Run "compile.bat prog" to build PGPLOT examples
-- Run "compile.bat clean" to reomve temporary object files
+- Copy the folder `./sys_mingw` to the PGPLOT distribution in `./src`
+- Run `compile.bat` to build libpgplot.dll
+- Run `compile.bat prog` to build PGPLOT examples
+- Run `compile.bat clean` to reomve temporary object files
 
 
 ## Running PGPLOT examples
