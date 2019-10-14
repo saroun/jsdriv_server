@@ -1,3 +1,12 @@
+**JSDRIV graphics device for PGPLOT** 
+The files in this package are distributed under the terms 
+of the *GNU General Public License*. The text of this license is copied below.
+
+Note that the **PGPLOT graphics library** has different license conditions, which 
+should be included in the PGPLOT source distribution, 
+available http://www.astro.caltech.edu/~tjp/pgplot/ (see copyright.notice) 
+
+============================================
 GNU GENERAL PUBLIC LICENSE
                        Version 2, June 1991
 
