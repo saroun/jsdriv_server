@@ -13,14 +13,16 @@ Licence: see LICENSE
 
 ## Package contents
 
-`./jsdriv` - Source files for compiling jsdrivlib.dll and jsdriv_server.exe (with Lazarus project files) 
+### ./jsdriv
+Source files for compiling jsdrivlib.dll and jsdriv_server.exe (with Lazarus project files) 
 
-`./pgplot_binding` - Extensions to PGPLOT needed to create libpgplot.dll which supports the JSDRIV device.
+### ./pgplot_binding 
+
+Extensions to PGPLOT needed to create libpgplot.dll which supports the JSDRIV device. 
 	
-`./pgplot_binding/sys_mingw` - Source files to be be merged with the original PGPLOT source distribution
+`sys_mingw` - Source files to be be merged with the original PGPLOT source distribution
 
-
-`./pgplot_binding/tgt` - Target directory for compilation, including:
+`tgt` - Target directory for compilation, including:
 
 `makeflie_gfortran` - makefile for compiling PGPLOT using mingw-w64 gcc + gfortran (includes drivers: NULL, PSDRIV, JSDRIV)	
 
