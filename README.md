@@ -53,7 +53,7 @@ Extensions to PGPLOT needed to create libpgplot.dll which supports the JSDRIV de
 - Copy the folder `./sys_mingw` to the PGPLOT distribution in `./src`
 - Run `compile.bat` to build libpgplot.dll
 - Run `compile.bat prog` to build PGPLOT examples
-- Run `compile.bat clean` to reomve temporary object files
+- Run `compile.bat clean` to remove temporary object files
 
 
 ## Running PGPLOT examples
@@ -73,5 +73,5 @@ Extensions to PGPLOT needed to create libpgplot.dll which supports the JSDRIV de
 	- libquadmath-0.dll
 	- libgcc_s_seh-1.dll
 - Install grfont.dat and jsdriv_server.exe in the directory defined in the PGPLOT_DIR variable. 
-  Recommended place is the folder the dll's and the application binaries  
+  Recommended place is the folder with the dll's and the application binaries  
   
