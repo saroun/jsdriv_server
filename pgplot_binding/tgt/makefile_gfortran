@@ -32,13 +32,14 @@
 
 # Define your source directory here:
 SRC?=../src
+# Define your system dependent source directory here:
+SYSDIR?=../sys_mingw
 #	PGPLOT subdirectories
 SRCDIR=$(SRC)/src
 OBSDIR=$(SRC)/obssrc
 DEMDIR=$(SRC)/examples
 FNTDIR=$(SRC)/fonts
 DRVDIR=$(SRC)/drivers
-SYSDIR=$(SRC)/sys_mingw
 PGDDIR=$(SRC)/pgdispd
 GENDIR=$(SRC)/sys
 
