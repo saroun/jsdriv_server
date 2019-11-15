@@ -1,8 +1,18 @@
+# generated binaries and temporary files
 *.dll
 *.lib
 *.exe
 *.o
 *.mod
-grfont.dat
 *.def
+lib
+bin
+backup
+
+# Lazarus generated files:
+*.lps
+
+# PGPLOT generated files
+grfont.dat
+
 
