@@ -3,14 +3,12 @@ PGPLOT graphics device for Windows
 
 Written by: J.Saroun, saroun@ujf.cas.cz
 
-Licence: see LICENSE
-
 ## Features
 
 - Allows to use PGPLOT interactive graphics on Windows 
 - Requires mingw-w64 gcc compiler suite to compile 
 - Developed and tested on Windows 10, 64 bit
-- Uses a new JSDRIV device server (analogy to pgxwin_server on Linux)
+- Provides a new JSDRIV device server (analogy to pgxwin_server on Linux)
 
 =====================================================================
 
@@ -50,7 +48,6 @@ Extensions to PGPLOT needed to create libpgplot.dll which supports the JSDRIV de
 - Create a directory `./src` and extract PGPLOT sources to it
 - Open Windows command line and make `./tgt` your current directory
 - Make sure you call the correct gcc compiler from mingw-w64 distribution, try `> gcc --version`
-- Copy the folder `./sys_mingw` to the PGPLOT distribution in `./src`
 - Run `compile.bat` to build libpgplot.dll
 - Run `compile.bat prog` to build PGPLOT examples
 - Run `compile.bat clean` to remove temporary object files

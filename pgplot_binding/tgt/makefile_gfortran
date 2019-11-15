@@ -7,26 +7,29 @@
 # - removed static library target
 # 
 # Usage:
-# > make -C ./ -f makefile_gfortran SRC=../src [target]
-# assuming makefile_gfortran in the current directory (./) and source files in ../src
-# use without [target] tu build libpgplot.dll with import library (libpgplot.lib)
+# > make -f makefile_gfortran SRC=../src SYSDIR=../sys_mingw [target]
+# assuming makefile_gfortran in the current directory (./), source files in ../src
+# and system specific files in ../sys_mingw. These are the defaults, so you can simply run
+# > make -f makefile_gfortran 
+# use without [target] to build libpgplot.dll with import library (libpgplot.lib)
 # use [target]=prog to compile the pgdemo examples
 # use [target]=clean to clean distribution (remove *.o)
 # use [target]=erase to remove *.o and all other binaries
 # 
 # Note on JSDRIV:
 # Only a C wrapper is linked to libpgplot.dll. It loads dynamically jsdrivlib.dll when JSDRIV is selected.
-# The JSDRIv driver has been written for windows using Lazarus (FreePascal), 
-# the source files are in ./jsdriv-servr subdirectory. 
+# The JSDRIV driver has been written for windows using Lazarus (FreePascal), 
+# the source files are in ./jsdriv subdirectory. 
 # - jsdrivlib.dll implements a client part of the driver and
 # - jsdriv_server.exe is a server part (much like pgxwin_server in linux)
-# The server is started automatically if it is found in the path defined in PGPLOT_DIR env. var.
+# The server is started automatically if it is found in the path defined in PGPLOT_DIR env. variable
 # Otherwise it has to be started by user before selecting the JSDRIV device.
 # Standard Windows rules apply for finding jsdrivlib.dll: ideally put it together with libpgplot.dll 
 # in the same directory as the application executable.
 #
 # Dependences: libpgplot.dll may depend on some mingw-w64 gcc libraries, namely:
-#   
+#	- libquadmath-0.dll
+#	- libgcc_s_seh-1.dll 
 #  
 #-----------------------------------------------------------------------
 

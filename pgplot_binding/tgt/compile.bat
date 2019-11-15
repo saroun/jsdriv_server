@@ -1,19 +1,22 @@
 @echo off
 set tgt=%1
+set opt="make -C ./ -f makefile_gfortran SRC=../src SYSDIR=../sys_mingw "
+
 if [%tgt%]==[clean] (
-	make -C ./ -f makefile_gfortran SRC=../src clean
+	make %opt% clean
 	goto end
 )
 if [%tgt%]==[erase] (
-	make -C ./ -f makefile_gfortran SRC=../src erase
+	make %opt%  erase
 	goto end
 )
 
 if [%tgt%]==[prog] (
-	make -C ./ -f makefile_gfortran SRC=../src prog
+	make %opt%  prog 
 	goto end
 )
 
-make -C ./ -f makefile_gfortran SRC=../src %tgt%
+make %opt%  %tgt%
+
 :end
 

@@ -1,3 +1,8 @@
 *.dll
 *.lib
 *.exe
+*.o
+*.mod
+grfont.dat
+*.def
+
