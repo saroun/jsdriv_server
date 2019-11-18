@@ -4,13 +4,11 @@
     <PathDelim Value="\"/>
     <Version Value="11"/>
     <BuildModes Active="Default"/>
-    <Units Count="14">
+    <Units Count="7">
       <Unit0>
         <Filename Value="jsdriv_server.lpr"/>
         <IsPartOfProject Value="True"/>
-        <CursorPos X="34" Y="12"/>
-        <UsageCount Value="226"/>
-        <Loaded Value="True"/>
+        <UsageCount Value="20"/>
       </Unit0>
       <Unit1>
         <Filename Value="mainunit.pas"/>
@@ -19,30 +17,20 @@
         <HasResources Value="True"/>
         <ResourceBaseClass Value="Form"/>
         <UnitName Value="MainUnit"/>
-        <EditorIndex Value="1"/>
-        <TopLine Value="79"/>
-        <CursorPos X="12" Y="88"/>
-        <UsageCount Value="226"/>
+        <IsVisibleTab Value="True"/>
+        <UsageCount Value="20"/>
         <Loaded Value="True"/>
         <LoadedDesigner Value="True"/>
       </Unit1>
       <Unit2>
         <Filename Value="pstream.pas"/>
         <IsPartOfProject Value="True"/>
-        <EditorIndex Value="2"/>
-        <TopLine Value="222"/>
-        <CursorPos X="43" Y="239"/>
-        <UsageCount Value="226"/>
-        <Loaded Value="True"/>
+        <UsageCount Value="20"/>
       </Unit2>
       <Unit3>
         <Filename Value="jsdrivproc.pas"/>
         <IsPartOfProject Value="True"/>
-        <EditorIndex Value="5"/>
-        <TopLine Value="147"/>
-        <CursorPos X="21" Y="167"/>
-        <UsageCount Value="216"/>
-        <Loaded Value="True"/>
+        <UsageCount Value="20"/>
       </Unit3>
       <Unit4>
         <Filename Value="plotwin.pas"/>
@@ -50,228 +38,23 @@
         <ComponentName Value="Plotter"/>
         <HasResources Value="True"/>
         <ResourceBaseClass Value="Form"/>
-        <IsVisibleTab Value="True"/>
-        <EditorIndex Value="3"/>
-        <TopLine Value="82"/>
-        <CursorPos X="55" Y="97"/>
-        <UsageCount Value="217"/>
-        <Loaded Value="True"/>
-        <LoadedDesigner Value="True"/>
+        <UsageCount Value="20"/>
       </Unit4>
       <Unit5>
         <Filename Value="jsdriv_comm.pas"/>
         <IsPartOfProject Value="True"/>
-        <EditorIndex Value="4"/>
-        <CursorPos X="58" Y="23"/>
-        <UsageCount Value="215"/>
-        <Loaded Value="True"/>
+        <UsageCount Value="20"/>
       </Unit5>
       <Unit6>
         <Filename Value="jsdrivlist.pas"/>
         <IsPartOfProject Value="True"/>
-        <EditorIndex Value="6"/>
-        <CursorPos Y="3"/>
-        <UsageCount Value="217"/>
-        <Loaded Value="True"/>
+        <UsageCount Value="20"/>
       </Unit6>
-      <Unit7>
-        <Filename Value="jsmouse.pas"/>
-        <EditorIndex Value="-1"/>
-        <TopLine Value="14"/>
-        <CursorPos X="27" Y="40"/>
-        <UsageCount Value="184"/>
-      </Unit7>
-      <Unit8>
-        <Filename Value="jsdevice.pas"/>
-        <EditorIndex Value="-1"/>
-        <TopLine Value="467"/>
-        <CursorPos Y="490"/>
-        <UsageCount Value="170"/>
-      </Unit8>
-      <Unit9>
-        <Filename Value="..\simpleipc_demo\server.pas"/>
-        <EditorIndex Value="-1"/>
-        <TopLine Value="69"/>
-        <CursorPos X="38" Y="87"/>
-        <UsageCount Value="50"/>
-      </Unit9>
-      <Unit10>
-        <Filename Value="C:\lazarus\fpc\3.0.4\source\packages\fcl-process\src\simpleipc.pp"/>
-        <EditorIndex Value="-1"/>
-        <TopLine Value="238"/>
-        <CursorPos X="52" Y="798"/>
-        <UsageCount Value="45"/>
-      </Unit10>
-      <Unit11>
-        <Filename Value="jsdrivclient.pas"/>
-        <EditorIndex Value="7"/>
-        <TopLine Value="59"/>
-        <CursorPos X="21" Y="7"/>
-        <UsageCount Value="111"/>
-        <Loaded Value="True"/>
-      </Unit11>
-      <Unit12>
-        <Filename Value="C:\lazarus\fpc\3.0.4\source\packages\fcl-process\src\winall\simpleipc.inc"/>
-        <EditorIndex Value="-1"/>
-        <TopLine Value="333"/>
-        <CursorPos X="22" Y="349"/>
-        <UsageCount Value="39"/>
-      </Unit12>
-      <Unit13>
-        <Filename Value="C:\lazarus\lcl\include\customform.inc"/>
-        <EditorIndex Value="-1"/>
-        <TopLine Value="960"/>
-        <CursorPos Y="975"/>
-        <UsageCount Value="55"/>
-      </Unit13>
     </Units>
-    <JumpHistory Count="30" HistoryIndex="29">
-      <Position1>
-        <Filename Value="plotwin.pas"/>
-        <Caret Line="472" Column="13" TopLine="448"/>
-      </Position1>
-      <Position2>
-        <Filename Value="plotwin.pas"/>
-        <Caret Line="589" Column="19" TopLine="568"/>
-      </Position2>
-      <Position3>
-        <Filename Value="plotwin.pas"/>
-        <Caret Line="96" Column="17" TopLine="82"/>
-      </Position3>
-      <Position4>
-        <Filename Value="plotwin.pas"/>
-        <Caret Line="458" Column="45" TopLine="443"/>
-      </Position4>
-      <Position5>
-        <Filename Value="plotwin.pas"/>
-        <Caret Line="470" Column="43" TopLine="452"/>
-      </Position5>
-      <Position6>
-        <Filename Value="plotwin.pas"/>
-        <Caret Line="580" Column="20" TopLine="568"/>
-      </Position6>
-      <Position7>
-        <Filename Value="plotwin.pas"/>
-        <Caret Line="584" Column="18" TopLine="568"/>
-      </Position7>
-      <Position8>
-        <Filename Value="plotwin.pas"/>
-        <Caret Line="589" Column="19" TopLine="568"/>
-      </Position8>
-      <Position9>
-        <Filename Value="plotwin.pas"/>
-        <Caret Line="604" Column="28" TopLine="585"/>
-      </Position9>
-      <Position10>
-        <Filename Value="plotwin.pas"/>
-        <Caret Line="626" Column="14" TopLine="609"/>
-      </Position10>
-      <Position11>
-        <Filename Value="plotwin.pas"/>
-        <Caret Line="637" Column="14" TopLine="613"/>
-      </Position11>
-      <Position12>
-        <Filename Value="plotwin.pas"/>
-        <Caret Line="652" Column="14" TopLine="628"/>
-      </Position12>
-      <Position13>
-        <Filename Value="plotwin.pas"/>
-        <Caret Line="698" Column="14" TopLine="679"/>
-      </Position13>
-      <Position14>
-        <Filename Value="plotwin.pas"/>
-        <Caret Line="738" Column="16" TopLine="732"/>
-      </Position14>
-      <Position15>
-        <Filename Value="plotwin.pas"/>
-        <Caret Line="96" Column="17" TopLine="82"/>
-      </Position15>
-      <Position16>
-        <Filename Value="plotwin.pas"/>
-        <Caret Line="186" Column="98" TopLine="176"/>
-      </Position16>
-      <Position17>
-        <Filename Value="plotwin.pas"/>
-        <Caret Line="96" Column="17" TopLine="82"/>
-      </Position17>
-      <Position18>
-        <Filename Value="plotwin.pas"/>
-        <Caret Line="458" Column="16" TopLine="440"/>
-      </Position18>
-      <Position19>
-        <Filename Value="plotwin.pas"/>
-        <Caret Line="459" Column="45" TopLine="440"/>
-      </Position19>
-      <Position20>
-        <Filename Value="plotwin.pas"/>
-        <Caret Line="471" Column="16" TopLine="453"/>
-      </Position20>
-      <Position21>
-        <Filename Value="plotwin.pas"/>
-        <Caret Line="472" Column="43" TopLine="453"/>
-      </Position21>
-      <Position22>
-        <Filename Value="plotwin.pas"/>
-        <Caret Line="582" Column="20" TopLine="558"/>
-      </Position22>
-      <Position23>
-        <Filename Value="plotwin.pas"/>
-        <Caret Line="586" Column="18" TopLine="562"/>
-      </Position23>
-      <Position24>
-        <Filename Value="plotwin.pas"/>
-        <Caret Line="591" Column="19" TopLine="567"/>
-      </Position24>
-      <Position25>
-        <Filename Value="plotwin.pas"/>
-        <Caret Line="605" Column="14" TopLine="581"/>
-      </Position25>
-      <Position26>
-        <Filename Value="plotwin.pas"/>
-        <Caret Line="628" Column="14" TopLine="604"/>
-      </Position26>
-      <Position27>
-        <Filename Value="plotwin.pas"/>
-        <Caret Line="639" Column="14" TopLine="615"/>
-      </Position27>
-      <Position28>
-        <Filename Value="plotwin.pas"/>
-        <Caret Line="654" Column="14" TopLine="630"/>
-      </Position28>
-      <Position29>
-        <Filename Value="plotwin.pas"/>
-        <Caret Line="700" Column="14" TopLine="676"/>
-      </Position29>
-      <Position30>
-        <Filename Value="plotwin.pas"/>
-        <Caret Line="740" Column="16" TopLine="716"/>
-      </Position30>
-    </JumpHistory>
+    <JumpHistory HistoryIndex="-1"/>
     <RunParams>
       <FormatVersion Value="2"/>
-      <Modes Count="1" ActiveMode="default">
-        <Mode0 Name="default">
-          <local>
-            <CommandLineParams Value="-stay"/>
-          </local>
-          <environment>
-            <UserOverrides Count="1">
-              <Variable0 Name="PGPLOT_FONT" Value="C:\Saroun\simres64\simres\pgplot\tgt"/>
-            </UserOverrides>
-          </environment>
-        </Mode0>
-      </Modes>
+      <Modes Count="0" ActiveMode=""/>
     </RunParams>
   </ProjectSession>
-  <Debugging>
-    <BreakPoints Count="1">
-      <Item1>
-        <Kind Value="bpkSource"/>
-        <WatchScope Value="wpsLocal"/>
-        <WatchKind Value="wpkWrite"/>
-        <Source Value="C:\lazarus\fpc\3.0.4\source\packages\fcl-process\src\winall\simpleipc.inc"/>
-        <Line Value="346"/>
-      </Item1>
-    </BreakPoints>
-  </Debugging>
 </CONFIG>
