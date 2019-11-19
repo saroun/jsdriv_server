@@ -7,19 +7,25 @@
 # - removed static library target
 # 
 # Usage:
-# > make -f makefile_gfortran SRC=./src SYSDIR=./sys_mingw [target]
-# assuming makefile_gfortran in the current directory (./), source files in ./src
-# and system specific files in ./sys_mingw. These are the defaults, so you can simply run
-# > make -f makefile_gfortran 
+# > make -f makefile_gfortran [target]
+#
+# Optional parameters:
+# SRC=PGPLOT source distribution directory, default=./src
+# BIN=target directory for installation of *.dll, default=.
+# PGD=Target for grfont.dat and server (what should be PGPLOT_DIR) , default=.
+#
+# Assumes system specific files in ./sys_mingw
+#
 # use without [target] to build libpgplot.dll with import library (libpgplot.lib)
 # use [target]=prog to compile the pgdemo examples
 # use [target]=clean to clean distribution (remove *.o)
 # use [target]=erase to remove *.o and all other binaries
-# 
-# Note on JSDRIV:
-# Only a C wrapper is linked to libpgplot.dll. It loads dynamically jsdrivlib.dll when JSDRIV is selected.
-# The JSDRIV driver has been written for windows using Lazarus (FreePascal), 
-# the source files are in ./jsdriv subdirectory. 
+# use [target]=install to copy results to the specified directories BIN and [PGD]
+#
+# Note on the JSDRIV graphics device:
+# Only a C wrapper is linked to libpgplot.dll. It loads dynamically jsdrivlib.dll when JSDRIV is selected
+# The JSDRIV driver has been written for windows using Lazarus (FreePascal) 
+# The source files are available at https://github.com/saroun/jsdriv_server 
 # - jsdrivlib.dll implements a client part of the driver and
 # - jsdriv_server.exe is a server part (much like pgxwin_server in linux)
 # The server is started automatically if it is found in the path defined in PGPLOT_DIR env. variable
@@ -33,10 +39,17 @@
 #  
 #-----------------------------------------------------------------------
 
-# Define your source directory here:
+# PGPLOT source distribution directory:
 SRC?=./src
-# Define your system dependent source directory here:
-SYSDIR?=./sys_mingw
+# Your system dependent source directory:
+SYSDIR=./sys_mingw
+# Target for binary files (pgdemo.. , libpgplot.dll, libpgplot.lib, libpgplot.so)
+BIN?=.
+# Target for grfont.dat and server (what should be PGPLOT_DIR) 
+PGD?=.
+
+COPY=copy /Y
+RM=erase
 
 #	PGPLOT subdirectories
 SRCDIR=$(SRC)/src
@@ -65,17 +78,25 @@ CFLAGD=-Wall -O
 #
 # Loader library-flags
 #
-LIBS= -L./ -lpgplot
+LIBS= 
 
-#
-#	Loader command for PGPLOT library
-#
-PGPLOT_LIB=
 #
 # Shared library creation.
 #
 SHARED_LIB=libpgplot.dll
-SHARED_LD=gfortran -shared  -o libpgplot.dll -fPIC -Wl,--enable-auto-import -Wl,--export-all-symbols -Wl,--out-implib=libpgplot.lib -Wl,--output-def=libpgplot.def
+IMP_LIB=libpgplot.lib
+DEF_LIB=libpgplot.def
+SHARED_LD=gfortran -shared -o $(SHARED_LIB) -fPIC -Wl,--enable-auto-import -Wl,--export-all-symbols -Wl,--out-implib=$(IMP_LIB) -Wl,--output-def=$(DEF_LIB)
+
+
+#
+#	Loader command for PGPLOT library
+#
+# PGPLOT_LIB= -L./ -lpgplot
+PGPLOT_LIB=$(IMP_LIB)
+
+
+
 #
 # The libraries that the shared PGPLOT library depends upon.
 # This is for systems that allow one to specify what libraries
@@ -101,7 +122,7 @@ SYSTEM_ROUTINES= grdate.o grfileio.o grflun.o grgcom.o grgenv.o grglun.o grgmem.
 OBSOLETE_ROUTINES= grchar.o grchr0.o grdat2.o grgtc0.o grinqfont.o grinqli.o grinqpen.o grlinr.o grmark.o grmovr.o grsetfont.o grsetli.o grsetpen.o grtran.o grvect.o pgsetc.o pgsize.o
 DRIVERS=nudriv.o psdriv.o jsdriv.o
 PGDISP_ROUTINES= cleanup.o pgdisp.o figcurs.o getdata.o getvisuals.o handlexevent.o proccom.o resdb.o exposelgwin.o getcolors.o initlgluts.o initlgwin.o initlock.o initwmattr.o mainloop.o resizelgwin.o returnbuf.o waitevent.o updatelgtitle.o
-DEMOS= pgdemo1 pgdemo2 pgdemo3 pgdemo4 pgdemo5 pgdemo6 pgdemo7 pgdemo8 pgdemo9 pgdemo10 pgdemo11 pgdemo12 pgdemo13 pgdemo14 pgdemo15 pgdemo16 pgdemo17
+DEMOS= pgdemo1.exe pgdemo2.exe pgdemo3.exe pgdemo4.exe pgdemo5.exe pgdemo6.exe pgdemo7.exe pgdemo8.exe pgdemo9.exe pgdemo10.exe pgdemo11.exe pgdemo12.exe pgdemo13.exe pgdemo14.exe pgdemo15.exe pgdemo16.exe pgdemo17.exe
 #
 #-----------------------------------------------------------------------
 # Target "all" makes everything (except the library of obsolete routines)
@@ -711,40 +732,40 @@ $(SHARED_LIB): $(PG_ROUTINES) $(PG_NON_STANDARD) \
 #-----------------------------------------------------------------------
 prog: $(DEMOS)
 
-pgdemo1: $(DEMDIR)/pgdemo1.f 
-	$(FCOMPL) $(FFLAGD) -o pgdemo1 $(DEMDIR)/pgdemo1.f $(PGPLOT_LIB) $(LIBS)
-pgdemo2: $(DEMDIR)/pgdemo2.f 
-	$(FCOMPL) $(FFLAGD) -o pgdemo2 $(DEMDIR)/pgdemo2.f $(PGPLOT_LIB) $(LIBS)
-pgdemo3: $(DEMDIR)/pgdemo3.f 
-	$(FCOMPL) $(FFLAGD) -o pgdemo3 $(DEMDIR)/pgdemo3.f $(PGPLOT_LIB) $(LIBS)
-pgdemo4: $(DEMDIR)/pgdemo4.f 
-	$(FCOMPL) $(FFLAGD) -o pgdemo4 $(DEMDIR)/pgdemo4.f $(PGPLOT_LIB) $(LIBS)
-pgdemo5: $(DEMDIR)/pgdemo5.f 
-	$(FCOMPL) $(FFLAGD) -o pgdemo5 $(DEMDIR)/pgdemo5.f $(PGPLOT_LIB) $(LIBS)
-pgdemo6: $(DEMDIR)/pgdemo6.f 
-	$(FCOMPL) $(FFLAGD) -o pgdemo6 $(DEMDIR)/pgdemo6.f $(PGPLOT_LIB) $(LIBS)
-pgdemo7: $(DEMDIR)/pgdemo7.f 
-	$(FCOMPL) $(FFLAGD) -o pgdemo7 $(DEMDIR)/pgdemo7.f $(PGPLOT_LIB) $(LIBS)
-pgdemo8: $(DEMDIR)/pgdemo8.f 
-	$(FCOMPL) $(FFLAGD) -o pgdemo8 $(DEMDIR)/pgdemo8.f $(PGPLOT_LIB) $(LIBS)
-pgdemo9: $(DEMDIR)/pgdemo9.f 
-	$(FCOMPL) $(FFLAGD) -o pgdemo9 $(DEMDIR)/pgdemo9.f $(PGPLOT_LIB) $(LIBS)
-pgdemo10: $(DEMDIR)/pgdemo10.f 
-	$(FCOMPL) $(FFLAGD) -o pgdemo10 $(DEMDIR)/pgdemo10.f $(PGPLOT_LIB) $(LIBS)
-pgdemo11: $(DEMDIR)/pgdemo11.f 
-	$(FCOMPL) $(FFLAGD) -o pgdemo11 $(DEMDIR)/pgdemo11.f $(PGPLOT_LIB) $(LIBS)
-pgdemo12: $(DEMDIR)/pgdemo12.f 
-	$(FCOMPL) $(FFLAGD) -o pgdemo12 $(DEMDIR)/pgdemo12.f $(PGPLOT_LIB) $(LIBS)
-pgdemo13: $(DEMDIR)/pgdemo13.f 
-	$(FCOMPL) $(FFLAGD) -o pgdemo13 $(DEMDIR)/pgdemo13.f $(PGPLOT_LIB) $(LIBS)
-pgdemo14: $(DEMDIR)/pgdemo14.f 
-	$(FCOMPL) $(FFLAGD) -o pgdemo14 $(DEMDIR)/pgdemo14.f $(PGPLOT_LIB) $(LIBS)
-pgdemo15: $(DEMDIR)/pgdemo15.f 
-	$(FCOMPL) $(FFLAGD) -o pgdemo15 $(DEMDIR)/pgdemo15.f $(PGPLOT_LIB) $(LIBS)
-pgdemo16: $(DEMDIR)/pgdemo16.f 
-	$(FCOMPL) $(FFLAGD) -o pgdemo16 $(DEMDIR)/pgdemo16.f $(PGPLOT_LIB) $(LIBS)
-pgdemo17: $(DEMDIR)/pgdemo17.f 
-	$(FCOMPL) $(FFLAGD) -o pgdemo17 $(DEMDIR)/pgdemo17.f $(PGPLOT_LIB) $(LIBS)
+pgdemo1.exe: $(DEMDIR)/pgdemo1.f 
+	$(FCOMPL) $(FFLAGD) -o pgdemo1.exe $(DEMDIR)/pgdemo1.f $(PGPLOT_LIB) $(LIBS)
+pgdemo2.exe: $(DEMDIR)/pgdemo2.f 
+	$(FCOMPL) $(FFLAGD) -o pgdemo2.exe $(DEMDIR)/pgdemo2.f $(PGPLOT_LIB) $(LIBS)
+pgdemo3.exe: $(DEMDIR)/pgdemo3.f 
+	$(FCOMPL) $(FFLAGD) -o pgdemo3.exe $(DEMDIR)/pgdemo3.f $(PGPLOT_LIB) $(LIBS)
+pgdemo4.exe: $(DEMDIR)/pgdemo4.f 
+	$(FCOMPL) $(FFLAGD) -o pgdemo4.exe $(DEMDIR)/pgdemo4.f $(PGPLOT_LIB) $(LIBS)
+pgdemo5.exe: $(DEMDIR)/pgdemo5.f 
+	$(FCOMPL) $(FFLAGD) -o pgdemo5.exe $(DEMDIR)/pgdemo5.f $(PGPLOT_LIB) $(LIBS)
+pgdemo6.exe: $(DEMDIR)/pgdemo6.f 
+	$(FCOMPL) $(FFLAGD) -o pgdemo6.exe $(DEMDIR)/pgdemo6.f $(PGPLOT_LIB) $(LIBS)
+pgdemo7.exe: $(DEMDIR)/pgdemo7.f 
+	$(FCOMPL) $(FFLAGD) -o pgdemo7.exe $(DEMDIR)/pgdemo7.f $(PGPLOT_LIB) $(LIBS)
+pgdemo8.exe: $(DEMDIR)/pgdemo8.f 
+	$(FCOMPL) $(FFLAGD) -o pgdemo8.exe $(DEMDIR)/pgdemo8.f $(PGPLOT_LIB) $(LIBS)
+pgdemo9.exe: $(DEMDIR)/pgdemo9.f 
+	$(FCOMPL) $(FFLAGD) -o pgdemo9.exe $(DEMDIR)/pgdemo9.f $(PGPLOT_LIB) $(LIBS)
+pgdemo10.exe: $(DEMDIR)/pgdemo10.f 
+	$(FCOMPL) $(FFLAGD) -o pgdemo10.exe $(DEMDIR)/pgdemo10.f $(PGPLOT_LIB) $(LIBS)
+pgdemo11.exe: $(DEMDIR)/pgdemo11.f 
+	$(FCOMPL) $(FFLAGD) -o pgdemo11.exe $(DEMDIR)/pgdemo11.f $(PGPLOT_LIB) $(LIBS)
+pgdemo12.exe: $(DEMDIR)/pgdemo12.f 
+	$(FCOMPL) $(FFLAGD) -o pgdemo12.exe $(DEMDIR)/pgdemo12.f $(PGPLOT_LIB) $(LIBS)
+pgdemo13.exe: $(DEMDIR)/pgdemo13.f 
+	$(FCOMPL) $(FFLAGD) -o pgdemo13.exe $(DEMDIR)/pgdemo13.f $(PGPLOT_LIB) $(LIBS)
+pgdemo14.exe: $(DEMDIR)/pgdemo14.f 
+	$(FCOMPL) $(FFLAGD) -o pgdemo14.exe $(DEMDIR)/pgdemo14.f $(PGPLOT_LIB) $(LIBS)
+pgdemo15.exe: $(DEMDIR)/pgdemo15.f 
+	$(FCOMPL) $(FFLAGD) -o pgdemo15.exe $(DEMDIR)/pgdemo15.f $(PGPLOT_LIB) $(LIBS)
+pgdemo16.exe: $(DEMDIR)/pgdemo16.f 
+	$(FCOMPL) $(FFLAGD) -o pgdemo16.exe $(DEMDIR)/pgdemo16.f $(PGPLOT_LIB) $(LIBS)
+pgdemo17.exe: $(DEMDIR)/pgdemo17.f 
+	$(FCOMPL) $(FFLAGD) -o pgdemo17.exe $(DEMDIR)/pgdemo17.f $(PGPLOT_LIB) $(LIBS)
 
 #-----------------------------------------------------------------------
 # Target "grfont.dat" is the binary font file.
@@ -759,27 +780,33 @@ pgdemo17: $(DEMDIR)/pgdemo17.f
 
 grfont.dat: $(FNTDIR)/grfont.txt $(FNTDIR)/pgpack.f
 	$(FCOMPL) $(FFLAGC) -o pgpack.exe $(FNTDIR)/pgpack.f
-	erase grfont.dat
 	pgpack.exe <$(FNTDIR)/grfont.txt
-	erase pgpack.exe
+	$(RM) pgpack.exe
 
 #-----------------------------------------------------------------------
 # Target "clean" is used to remove all the intermediate files.
 #-----------------------------------------------------------------------
-clean :
-	erase *.o
+clean:
+	$(RM) *.o
+	$(RM) $(DEF_LIB)
+
+install:
+	$(COPY) $(SHARED_LIB) $(BIN)
+	$(COPY) $(IMP_LIB) $(BIN)
+	$(COPY) grfont.dat $(PGD)
 
 #-----------------------------------------------------------------------
 # Target "erase" is used to remove all the intermediate and binary files.
 #-----------------------------------------------------------------------
-erase :
-	erase *.o
-	erase pgdemo*.exe
-	erase libpgplot.dll
-	erase libpgplot.lib
-	erase libpgplot.def
-	erase grfont.dat
+erase:
+	$(RM) *.o
+	$(RM) pgdemo*.exe
+	$(RM) $(SHARED_LIB)
+	$(RM) $(IMP_LIB)
+	$(RM) $(DEF_LIB)
+	$(RM) grfont.dat
 	
+
 
 #-----------------------------------------------------------------------
 # Include file dependencies
