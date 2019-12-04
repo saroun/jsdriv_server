@@ -794,6 +794,7 @@ install:
 	$(COPY) $(SHARED_LIB) $(BIN)
 	$(COPY) $(IMP_LIB) $(BIN)
 	$(COPY) grfont.dat $(PGD)
+	$(COPY) $(SRC)\rgb.txt $(PGD)
 
 #-----------------------------------------------------------------------
 # Target "erase" is used to remove all the intermediate and binary files.
@@ -806,7 +807,11 @@ erase:
 	$(RM) $(DEF_LIB)
 	$(RM) grfont.dat
 	
-
+uninstall:
+	$(RM) $(BIN)\$(SHARED_LIB) 
+	$(RM) $(BIN)\$(IMP_LIB) 
+	$(RM) $(PGD)\grfont.dat 
+	$(RM) $(PGD)\rgb.txt 
 
 #-----------------------------------------------------------------------
 # Include file dependencies
