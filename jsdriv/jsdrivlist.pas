@@ -32,7 +32,13 @@ type
     protected
       function IndexOfPlotter(plt:TPlotter):integer;
       function GetUniqueID:integer;
+      {Create new plotter window}
+      function CreateNewPlot:TPlotter;
     public
+
+      {Destroy plots in the specified list.
+      Implicitly removes references from the global list "devices".}
+      procedure FreeDeviceList(plotlist:TFPList);
 
       {Find a plotter window by ID number}
       function FindByID(id:integer):TPlotter;
@@ -40,21 +46,24 @@ type
       {Get client info using the order index}
       function GetPlotInfo(index:integer):TPlotInfo;
 
-      {Create new plotter window}
-      function CreateNewPlot:TPlotter;
+      {Show all plots}
+      procedure ShowAllPlots;
+
+      {Close all plots}
+      procedure CloseAllPlots;
 
       {Select the first plot window in closed state or create a new one.
       Return its order number as ID}
       function OpenWorkstation:integer;
-
-      {Destroy all plots in closed state and rearrange list - keep IDs of open windows!}
-      procedure FreeClosed;
 
       {Delete given plot from the list, but do not free it! }
       procedure DeletePlot(plt:TPlotter);
 
       {Close all plots and delete them from the list. Don't free the plots !}
       procedure DeleteAll;
+
+      {Destroy all unused plots and rearrange list}
+      procedure FreeClosed;
 
       {Destroy all plot windows}
       procedure FreeAll;
@@ -65,8 +74,10 @@ type
     end;
 
 procedure InitPlots;
-procedure ReleaseallPlots;
+//procedure ReleaseallPlots;
 function DefaultWinSize:TPoint;
+
+
 
 var
     devices:TPlotList;  // list of all TPlotter instances
@@ -77,6 +88,25 @@ uses Forms, Dialogs;
 var
   DEF_WIDTH,DEF_HEIGHT:integer; // default window size
 
+
+{Destroy plots in the specified list.
+Implicitly removes references from the global list "devices".}
+procedure TPlotList.FreeDeviceList(plotlist:TFPList);
+var i:integer;
+    PL:TPlotter;
+begin
+  if (plotlist<>nil) and (plotlist<>devices) then
+  for i:=0 to plotlist.count-1 do
+  if plotlist.items[i]<>nil then
+  begin
+    PL:=TPlotter(plotlist.items[i]);
+    PL.Release;
+    PL.free;
+    // If self=devices, then PL is deleted from the list implicitly
+    if (self <> devices) then DeletePlot(PL);
+  end;
+  Pack;
+end;
 
 function DefaultWinSize:TPoint;
 begin
@@ -91,11 +121,12 @@ begin
   DEF_WIDTH:=round(DEF_HEIGHT/1.41); // Portrait format
 end;
 
+{
 procedure ReleaseallPlots;
 begin
   devices.FreeAll;
 end;
-
+ }
 { TPlotList }
 
 {Create new plotter window}
@@ -125,9 +156,10 @@ begin
      c:=TPlotter(items[index]);
      r.id:=IntToStr(c.PID);
      r.caption:=c.Caption;
-     if (c.IsOpen) then
-        r.status:='open'
-     else r.status:='closed';
+     if (c.IsUsed) then
+        r.status:='used'
+     else
+        r.status:='free';
    end else
    begin
      r.id:='';
@@ -177,6 +209,31 @@ begin
   end;
 end;
 
+{Show all plots}
+procedure TPlotList.ShowAllPlots;
+var i:integer;
+    PL:TPlotter;
+begin
+  for i:=0 to Count-1 do
+  begin
+    PL:=TPlotter(Items[i]);
+    PL.ShowInactive;
+    PL.BringToFront;
+  end;
+end;
+
+
+{Close all plots}
+procedure TPlotList.CloseAllPlots;
+var i:integer;
+    PL:TPlotter;
+begin
+  for i:=0 to Count-1 do
+  begin
+    PL:=TPlotter(Items[i]);
+    PL.Close;
+  end;
+end;
 
 {Select the first plot window in closed state or create a new one.
 Return its order number as ID}
@@ -186,7 +243,7 @@ var i:integer;
 begin
 // find th first plotter window which is in closed state
   i:=0;
-  while (i<count) and TPlotter(items[i]).isOpen do i:=i+1;
+  while (i<count) and TPlotter(items[i]).isUsed do i:=i+1;
 // There is no free plot window left, create a new one and add it to the list
   if i>=count then
   begin
@@ -204,20 +261,7 @@ begin
 end;
 
 
-{Destroy all plots in closed state and rearrange list - keep IDs of open windows!}
-procedure TPlotList.FreeClosed;
-var i:integer;
-begin
-  for i:=0 to count-1 do
-  if not TPlotter(items[i]).isOpen then
-  begin
-    TPlotter(items[i]).PlotClose;
-    TPlotter(items[i]).Release;
-    TPlotter(items[i]).free;
-    items[i]:=nil;
-  end;
-  Pack;
-end;
+
 
 
 {Delete given plot from the list, but do not free it! }
@@ -228,10 +272,8 @@ begin
   if (i>=0) then
   begin
     TPlotter(items[i]).PlotClose;
-    //TPlotter(items[i]).Release;
-    items[i]:=nil;
+    Delete(i);
   end;
-  Pack;
 end;
 
 {Close all plots and delete them from the list. Don't free the plots !}
@@ -247,22 +289,29 @@ begin
 end;
 
 
-
-{Destroww all plot windows}
-procedure TPlotList.FreeAll;
+{Destroy all unused plots and rearrange list}
+procedure TPlotList.FreeClosed;
 var i:integer;
+    var rmlist:TFPList;
 begin
-  for i:=0 to count-1 do
+  if count>0 then
   begin
-    if (items[i]<>nil) then
-    begin
-      TPlotter(items[i]).PlotClose;
-      TPlotter(items[i]).Release;
-      TPlotter(items[i]).free;
-    end;
-    items[i]:=nil;
+    rmlist := TFPList.Create;
+    for i:=0 to count-1 do
+        if not TPlotter(items[i]).isUsed then rmlist.Add(items[i]);
+    FreeDeviceList(rmlist);
+    rmlist.free;
   end;
-  Pack;
+end;
+
+{Destroy all plot windows}
+procedure TPlotList.FreeAll;
+var rmlist:TFPList;
+begin
+   rmlist := TFPList.Create;
+   rmlist.AddList(self);
+   FreeDeviceList(rmlist);
+   rmlist.free;
 end;
 
 {Destructor with cleanup}

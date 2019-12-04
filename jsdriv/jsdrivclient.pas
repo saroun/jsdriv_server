@@ -17,7 +17,6 @@ uses
 
 const
   SERVER_ID = 'jsdriv_server';
-  //CLIENT_ID = 'jsdriv_client';
   SERVER_EXE = 'jsdriv_server.exe';
 
 type
@@ -52,7 +51,11 @@ implementation
 uses Windows,Dos, jwatlhelp32;
 
 const
-  DBG=false;
+  {$IFDEF DEBUG}
+    DBG=true;
+  {$ELSE}
+    DBG=false;
+  {$ENDIF}
 
   {Number of elements expected in rbuf array for each function code.
   NOTE: PGPLOT does not pass correct NBUF value on input.
@@ -88,8 +91,13 @@ begin
      if (ndbg>0) then writeln(format('... plot %d lines ...',[ndbg]));
      ndbg:=0;
    end;
-   fmt:='[%s] id=%d, fnc=%d, nbuf=%d, lchr=%d, ';
+   fmt:='[%s] id=%d, fnc=%d, nbuf=%d, lchr=%d';
    msg:=format(fmt, [info, qry.Param.id, qry.Param.ifunc, qry.Param.nbuf, qry.Param.nchar]);
+   if (qry.Param.nbuf>0) then
+   begin
+        fmt:=', rbuf[0]=%g';
+        msg:=msg+format(fmt, [qry.Param.rbuf[0]]);
+   end;
    writeln(msg);
    {
    if (qry.Param.ifunc=22) then
@@ -141,7 +149,7 @@ end;
 {This is an implementation of GREXEC driver for calls which can be handled by the client.
 This permits to call the server only when actual plot window has to accessed.
 }
-function ClientSideDrv(var IFUNC:DWord; var RBUF:TBF; CHR:PChar; var LCHR:size_t; CLEN:DWORD):boolean;
+function ClientSideDrv(var IFUNC:DWord; var RBUF:TBF; CHR:PChar; var LCHR:integer; CLEN:DWORD):boolean;
 var
    S: string;
    icmd: integer;
@@ -243,24 +251,90 @@ end;
 { Post function calls from Sout to the server. }
 procedure PostFncCall;
 begin
-   if ((Sout.Size>0) and (ipcClient<>nil)) then ipcClient.SendMessage(0,Sout);
+   if ((Sout.Size>0) and (ipcClient<>nil)) then
+   begin
+        if (DBG) then writeln(format('post %d bytes, pos=%d',[Sout.Size,Sout.Position]));
+        ipcClient.SendMessage(0,Sout);
+   end;
    Sout.Position:=0;
    Sout.clear;
 end;
 
 
 
-{ Handler of OnMessage event for the server.
-This method should only handle the handshake on startup ...
-}
+{ Handle messages from the server}
 procedure ipcServerMessage(Sender: TObject);
 begin
-
-
 end;
 
 
-{Conects to the JSDRIV server.}
+function WaitForServer(maxtime:Qword):boolean;
+const STIME=200;
+var i:QWord;
+    tlimit,trun:QWord;
+    timeout:boolean;
+begin
+ i:=0;
+ trun:=0;
+ if (maxtime=0) then tlimit:=1000*STIME else tlimit:=maxtime;
+ result:= ipcClient.ServerRunning;
+ timeout:=false;
+ while ( not (result or timeout)) do
+ begin
+ //  if (i=0) then write('Waiting for jsdriv_server to start... ');
+   sleep(STIME);
+   ProcessMessages;
+   result:= ipcClient.ServerRunning;
+   if (result) then write('+') else  write('-');
+   inc(i);
+   trun:=trun+STIME;
+   timeout:= (trun>tlimit);
+ end;
+end;
+
+function StartSrvIfNotRuning:boolean;
+var
+  path:string;
+  i,L:integer;
+begin
+   result:= ipcClient.ServerRunning;
+   if (not result) then
+   begin
+      write('Waiting for '+ipcClient.ServerID+' to start... ');
+      // server not yet launched by the client, try it now
+      if (serverProc=nil) then
+      begin
+        serverProc:=TProcess.create(nil);
+        path:=GetEnv('PGPLOT_DIR');
+        L:=length(path);
+        if (L>0) then
+        begin
+           i:=LastDelimiter('\/',path);
+           if (i<L-1) then
+           begin
+              path := path+DirectorySeparator;
+           end;
+        end;
+        serverProc.Executable:= path+SERVER_EXE;
+        serverProc.Parameters.Add('-stay'); // to keep running after client disconnects
+        serverProc.Execute;
+      end;
+      result:= WaitForServer(10000);  // give 10 s to start the server ...
+      if (result) then writeln('OK') else writeln('failed')
+   end;
+end;
+
+
+
+
+{
+Connects to the JSDRIV server.
+- Make sure that the server is running. If not, try to launch it.
+- Make sure that receiver of responses from the server is running
+- Connect to the sever and checks that the server is responding by sending
+  the rcConnect message.
+- Set isConnected flag true if everything works
+}
 procedure connect;
 const
   MAXT=10;
@@ -270,25 +344,33 @@ var
   qry, resp:TJSDrivMsg;
 begin
 
- if (not ipcClient.ServerRunning) then raise Exception.Create(SERVER_ID + ' is not running');
+ if (not StartSrvIfNotRuning) then
+ begin
+    raise Exception.Create(SERVER_ID + ' is not running');
+ end;
  if (not ipcServer.Active) then raise Exception.Create(ipcServer.IDString + ' receiver is not running');
  if (not ipcClient.Active) then
  begin
     valid:=false;
+    if DBG then writeln(format('Connecting %s',[AppName]));
     // try to connect and send a message to the server
-   // write('Trying to connect to the jsdriv_server ... ');
+    if DBG then writeln(ipcServer.ServerID + ': Trying to reconnect to '+ipcClient.ServerID);
     ipcClient.Connect;
-    if (not ipcClient.Active) then raise Exception.Create('Cannot connect to '+ SERVER_ID);
+    if DBG then writeln('ipcClient.Connect OK');
+    if (not ipcClient.Active) then raise Exception.Create('Cannot connect to '+ ipcClient.ServerID);
     qry:=TJSDrivMsg.MsgConnect(ipcServer.ID, AppName);
     try
+      if DBG then writeln(format('writing qry [%s] %s',[qry.Source,ipcServer.ID]));
       qry.WriteToStream(Sout);
       PostFncCall;
+      if DBG then writeln('qry posted');
       // wait for server response: it has to connect to this.ipcServer
       ic:=0;
       while ((not valid) and (ic<MAXT)) do
       begin
         ic:=ic+1;
         responded:=ipcServer.PeekMessage(100, true);
+        if DBG then writeln('qry responded ',responded);
         if (responded) then
         begin
           Sin.Position:=0;
@@ -320,33 +402,54 @@ begin
     end;
     isConnected := valid;
     if (not valid) then raise Exception.Create(SERVER_ID + ' is not responding while trying to connect.');
- end;
+ end else isConnected:=true;
 end;
 
 
-function WaitForServer(maxtime:Qword):boolean;
-const STIME=200;
-var i:QWord;
-    tlimit,trun:QWord;
-    timeout:boolean;
+{
+Close connection and return to initial state.
+Terminate the server process if it was launched by this application.
+Set isConnected flag to false.
+}
+procedure disconnect;
+var qry:TJSDrivMsg;
 begin
- i:=0;
- trun:=0;
- if (maxtime=0) then tlimit:=1000*STIME else tlimit:=maxtime;
- result:= ipcClient.ServerRunning;
- timeout:=false;
- while ( not (result or timeout)) do
- begin
- //  if (i=0) then write('Waiting for jsdriv_server to start... ');
-   sleep(STIME);
-   ProcessMessages;
-   result:= ipcClient.ServerRunning;
-   if (result) then write('+') else  write('-');
-   inc(i);
-   trun:=trun+STIME;
-   timeout:= (trun>tlimit);
- end;
+   isConnected:=false;
+   if (ipcClient<>nil) then
+   begin
+      if (ipcClient.Active) then
+      begin
+        if DBG then writeln('jsdriv to send disconnect message');
+        // Send server a message to disconnect
+        if (ipcClient.ServerRunning) then
+        begin
+           Sout.Clear;;
+           Sout.Position:=0;
+           qry:=TJSDrivMsg.MsgDisconnect(ipcServer.ID);
+           try
+              qry.WriteToStream(Sout);
+              PostFncCall;
+              if DBG then writeln('jsdriv disconnect message sent');
+           finally
+             qry.free;
+           end;
+        end;
+         // disconnect form the server
+        // ipcClient.Disconnect;
+        ipcClient.Active:=false;
+      end else
+        if DBG then writeln('jsdriv cannot send disconnect message, inactive');
+   end else
+        if DBG then writeln('jsdriv cannot send disconnect message, nil');;
+   // terminate the server if launched by this client
+   if (serverProc<>nil) then
+   begin
+      serverProc.Active:=false;
+      serverProc.free;
+      serverProc:=nil;
+   end;
 end;
+
 
  {
 function FindServerWindow: HWND;
@@ -356,44 +459,6 @@ begin
   Result := FindWindowW(PWideChar(MsgWndClassName), PWideChar(CLIENT_ID));
 end;
 }
-
-function StartSrvIfNotRuning:boolean;
-var
-  path:string;
-  i,L:size_t;
-begin
-   result:= ipcClient.ServerRunning;
-   if (not result) then
-   begin
-      serverProc:=TProcess.create(nil);
-      path:=GetEnv('PGPLOT_DIR');
-      L:=length(path);
-      if (L>0) then
-      begin
-         i:=LastDelimiter('\/',path);
-         if (i<L-1) then
-         begin
-            path := path+DirectorySeparator;
-         end;
-      end;
-      serverProc.Executable:= path+SERVER_EXE;
-      serverProc.Parameters.Add('-stay'); // to keep running after client disconnects
-{
-TProcessOption = (poRunSuspended,poWaitOnExit,
-                  poUsePipes,poStderrToOutPut,
-                  poNoConsole,poNewConsole,
-                  poDefaultErrorMode,poNewProcessGroup,
-                  poDebugProcess,poDebugOnlyThisProcess);
-              // e.g.
-                  serverProc.Options := serverProc.Options + [poWaitOnExit];
-}
-      write('Waiting for '+SERVER_ID+' to start... ');
-      serverProc.Execute;
-      result:= WaitForServer(10000);  // give 10 s to start the server ...
-      if (result) then writeln('OK') else writeln('failed')
-   end;
-end;
-
 
 {finding a running process}
 function processExists(exeFileName: string): Boolean;
@@ -419,9 +484,6 @@ begin
   CloseHandle(FSnapshotHandle);
 end;
 
-
-
-
 {
 from Windows docs:
 No window classes registered by a DLL are unregistered when the DLL is unloaded.
@@ -440,31 +502,27 @@ begin
 end;
 
 
-{Create and start IPC client/server objects.
-Waits for a server until it starts.}
+{
+Create and start IPC client/server objects.
+Set the isInitialized flag true if successful.
+}
 procedure initialize;
 begin
-   writeln('jsdrivclient initialize ID: '+IntToStr(GetProcessID));
+   if (isInitialized) then exit;
    try
      AppName:=ParamStr(0);
    except
    end;
-   isConnected:=false;
    try
      ipcServer:=TDLLIPCServer.Create(nil);
-     ipcClient:=TSimpleIPCClient.Create(nil);
-     ipcClient.ServerID:=SERVER_ID;
      ipcServer.ServerID:=ipcServer.IDString;
      ipcServer.Global:=true;
      ipcServer.Active:=true;
+     ipcClient:=TSimpleIPCClient.Create(nil);
+     ipcClient.ServerID:=SERVER_ID;
      ProcessMessages;
-     if (not StartSrvIfNotRuning) then
-     begin
-        raise Exception.create('No JSDRIV server running');
-     end;
-     //WaitForServer;
-     connect;
      isInitialized:=true;
+     if DBG then writeln('jsdrivclient initialized, ID: '+IntToStr(GetProcessID));
    except
      on E:Exception do
      begin
@@ -474,47 +532,51 @@ begin
 end;
 
 
-{Cleanup }
-procedure finalize;
-var qry:TJSDrivMsg;
+{
+Check that the connection to JSDRIV server is running and ready.
+- If not, call connect procedure to establish the connection.
+- Return true if everything is OK.
+- If not, call disconnect in order to return to the initial state. This will allow
+  to restablish connection on the next call once the server is available.
+}
+function checkConnection:boolean;
+var r:boolean;
 begin
-   if (ipcClient<>nil) then
+   r:=ipcClient.ServerRunning and ipcClient.Active ;
+   {if isConnected, then the connection was established in the past,
+   but it may have been lost. We have to check it again.}
+   //if DBG then writeln('Checking connection: ', ipcClient.ServerRunning,ipcClient.Active);
+   if (not r) then
+   // renew connection
    begin
-        if (ipcClient.Active) then
-        begin
-           // Send server a message to disconnect
-           Sout.Clear;;
-           Sout.Position:=0;
-           qry:=TJSDrivMsg.MsgDisconnect(ipcServer.ID);
-           try
-              qry.WriteToStream(Sout);
-              PostFncCall;
-           finally
-             qry.free;
-             // disconnect form the server
-             ipcClient.Disconnect;
-             ipcClient.Active:=false;
-           end;
-        end;
-        FreeAndNil(ipcClient);
+     try
+        disconnect;
+        connect;
+        r:=isConnected;
+     except
+       on E:Exception do
+       begin
+          writeln(E.Message);
+          ShowException(E, E.ClassInfo);
+       end;
+     end;
    end;
-   if (ipcServer<>nil) then
-   begin
-     ipcServer.Active:=false;
-     FreeAndNil(ipcServer);
-   end;
-   FreeAndNil(Sin);
-   FreeAndNil(Sout);
-   serverProc.free;
+   //if DBG then writeln('Checking result: ', r);
+   if (not isConnected) then disconnect;
+   result:=isConnected;
 end;
+
 
 {Create a message instance for function call}
 function GetQuery(IFUNC:integer; var RBUF:TBF;NBUF:integer;CHR:PChar;CLEN:integer):TJSDrivMsg;
 var par:TFPar;
 begin
    par:=CreatePar(IFUNC, RBUF, NBUF, CHR, CLEN);
-   par.id:=GetNextMsgID;
-   result:=TJSDrivMsg.MsgFunc(ipcServer.ID,par,isCallback(IFUNC));
+   if (par<>nil) then
+   begin
+        par.id:=GetNextMsgID;
+        result:=TJSDrivMsg.MsgFunc(ipcServer.ID,par,isCallback(IFUNC));
+   end else result:=nil;
 end;
 
 { Main PGPLOT driver function - this is the exported interface to the GREXEC of PGPLOT. }
@@ -526,7 +588,7 @@ var
     responded, valid:boolean;
     ic:integer;
     IFUNC:DWord;
-    NBUF,LCHR:size_t;
+    NBUF,LCHR:integer;
     qry, resp:TJSDrivMsg;
 begin
     // type conversion
@@ -534,7 +596,10 @@ begin
     NBUF:=N_BUF;
     LCHR:=L_CHR;
 
-    if ((NBUF=0) and (IFUNC>0) and (IFUNC<=29)) then NBUF:=nb[IFUNC];
+    if ((IFUNC>0) and (IFUNC<=29)) then
+    begin
+      if (N_BUF < nb[IFUNC]) then NBUF:=nb[IFUNC];
+    end;
 
 // some commands can be handled on the client side ...
     if (ClientSideDrv(IFUNC,RBUF, CHR,LCHR, CLEN)) then
@@ -546,20 +611,31 @@ begin
 // if not initialized, do it now
     if (not isInitialized) then initialize;
 
-// could not connect, let it know to the calling module
+// if not connected yet, do it now
+    isConnected:=checkConnection;
+
+// if still not connected, report error and exit
     if (not isConnected) then
     begin
-        // this should tell PGPLOT that the driver could not open the workstation
         if (IFUNC=9) then
         begin
+            writeln('JSDRIV client: Cannot connect to '+SERVER_ID);
+            // this should tell PGPLOT that the driver could not open the workstation
             TBF(RBUF)[0]:=0;
             TBF(RBUF)[1]:=0;
         end;
         exit;
     end;
 
+    if DBG then writeln(format('jsdriv ifunc=%d, nbuf=%d ',[IFUNC, NBUF]));
+
 // create message object
     qry:=GetQuery(IFUNC, RBUF, NBUF, CHR, CLEN);
+    if (qry=nil) then
+    begin
+      writeln('Cannot create query, ifunc=',IFUNC);
+      exit;
+    end;
     LogIPCMsg('call',qry);
     try
 // send it to plotter and wait for return values
@@ -577,33 +653,37 @@ begin
          begin
            // no timeout when asking for mouse input ....
            if (IFUNC<>17) then ic:=ic+1;
-           responded:=ipcServer.PeekMessage(100, true);
+           responded:=ipcServer.PeekMessage(20, true);
            if (responded) then
            begin
-                Sin.Position:=0;
-                Sin.Clear;
-                ipcServer.GetMessageData(Sin);
-                Sin.Position:=0;
-                resp:=TJSDrivMsg.create;
-                try
-                   resp.ReadFromStream(Sin);
-                   LogIPCMsg('response',resp);
-                   if (resp.MsgType = rcFuncCallback) then
+              Sin.Position:=0;
+              Sin.Clear;
+              ipcServer.GetMessageData(Sin);
+              Sin.Position:=0;
+              resp:=TJSDrivMsg.create;
+              try
+                 resp.ReadFromStream(Sin);
+                 LogIPCMsg('response',resp);
+                 if (resp.MsgType = rcFuncCallback) then
+                 begin
+                   if ((resp.Param.ifunc=qry.Param.ifunc) and (resp.Param.id=qry.Param.id)) then
                    begin
-                     if ((resp.Param.ifunc=qry.Param.ifunc) and (resp.Param.id=qry.Param.id)) then
-                     begin
-                        resp.Param.WriteToBuffer(RBUF, NBUF, CHR, LCHR);
-                        valid:=true;
-                     end;
+                      resp.Param.WriteToBuffer(RBUF, NBUF, CHR, LCHR);
+                      valid:=true;
                    end;
-                finally
-                    resp.free;
-                end;
+                 end;
+              finally
+                  resp.free;
+              end;
            end;
          end;
-         if (not valid) then
+         if (valid) then
          begin
-              writeln('JSDRIV client: Timeout while waiting for callback, fnc=',IFUNC);
+            L_CHR:=integer(LCHR);
+            if (N_BUF<>NBUF) then N_BUF:=NBUF;
+         end
+         else begin
+            writeln('JSDRIV client: Timeout while waiting for callback, fnc=',IFUNC);
          end;
   // send it to plotter, return values not required
       end else
@@ -615,14 +695,32 @@ begin
     finally
       FreeAndNil(qry);
     end;
-    L_CHR:=integer(LCHR);
+end;
+
+{Cleanup before application ends}
+procedure finalize;
+begin
+  // try
+     disconnect;
+  // finally
+     FreeAndNil(ipcClient);
+  // end;
+   if (ipcServer<>nil) then
+   begin
+     ipcServer.Active:=false;
+     FreeAndNil(ipcServer);
+   end;
+   FreeAndNil(Sin);
+   FreeAndNil(Sout);
+   if (serverProc<>nil) then serverProc.Active:=false;
+   FreeAndNil(serverProc);
 end;
 
 
 initialization
-  //writeln('sizes: ',sQWord,sTLen,SizeOf(DWord));
   AppName:='JSDRIV plotter';
   isInitialized:=false;
+  isConnected:=false;
   serverProc:=nil;
   Sin:=TMemoryStream.Create;
   Sout:=TMemoryStream.Create;
@@ -630,6 +728,7 @@ initialization
 
 
 finalization
+  writeln('jsdrivclient finalize');
   finalize;
   unregSrv;
 

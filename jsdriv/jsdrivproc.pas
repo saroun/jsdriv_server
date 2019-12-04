@@ -62,7 +62,7 @@ try
 // Return device capabilities -------------------------------------------------
    4: begin
 
-{    chr[0] = 'I'; /* Interactive device */
+{    chr[0] = 'I'; /* Interactive device */                                 1
     chr[1] = 'C'; /* Cursor is available */
     chr[2] = 'N'; /* No dashed lines */
     chr[3] = 'A'; /* Area fill available */
@@ -119,7 +119,7 @@ try
    9: begin
 
         I:=client.OpenDevice;
-        if I<0 then // opening of a new plot window failed
+        if I<=0 then // opening of a new plot window failed
         begin
             par.rbuf[0]:=0;
             par.rbuf[1]:=0;
@@ -178,7 +178,7 @@ try
 // Flush buffer ---------------------------------------------------------------
    16: if (plt<>nil) then
        begin
-         plt.FlushImage;
+         if (not plt.IsStatic) then plt.FlushImage;
 //         Application.ProcessMessages;
        end;
 

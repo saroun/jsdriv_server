@@ -19,7 +19,7 @@ uses
 const
   SERVER_ID = 'jsdriv_server';
   SRVTITLE = 'JSDRIV plotter';
-  TIMER_CONNECTED=20;  // timer period [ms] when a client is connected
+  TIMER_CONNECTED=10;  // timer period [ms] when a client is connected
   TIMER_DISCONNECTED=100; // timer period [ms] when there is no client connected
 
 type
@@ -27,7 +27,8 @@ type
   { TCtrlForm }
 
   TCtrlForm = class(TForm)
-    Button1: TButton;
+    btnClear: TButton;
+    btnClose: TButton;
     ExitBtn: TBitBtn;
     LogMemo: TMemo;
     CloseItem: TMenuItem;
@@ -38,7 +39,6 @@ type
     mnClose: TMenuItem;
     mnSettings: TMenuItem;
     PopupDevices: TPopupMenu;
-    SrvBtn: TButton;
     GridConn: TStringGrid;
     GridPlots: TStringGrid;
     TabLog: TTabSheet;
@@ -48,7 +48,8 @@ type
     TrayPopup: TPopupMenu;
     TimerPeek: TTimer;
     TrayIcon1: TTrayIcon;
-    procedure Button1Click(Sender: TObject);
+    procedure btnClearClick(Sender: TObject);
+    procedure btnCloseClick(Sender: TObject);
     procedure CloseItemClick(Sender: TObject);
     procedure ExitBtnClick(Sender: TObject);
     procedure FormClose(Sender: TObject; var CloseAction: TCloseAction);
@@ -65,13 +66,15 @@ type
      fClosing:boolean;
   public
     procedure UpdateContent;
-    procedure ShowPlot;
-    procedure ClosePlot;
+    {Show all active plot windows and bring them to front}
+    procedure ShowPlots;
+//    procedure ClosePlot;
     function ReceiveData:QWord;
     function ConnectClient(procid, appname:string):TJSDrivClient;
     function HasInputData:boolean;
     procedure SendCommand(query:TJSDrivMsg);
     property isClosing:boolean read fClosing;
+
 
 
   end;
@@ -82,10 +85,15 @@ var
 
 procedure LogTxt(msg:string);
 
+
 implementation
-uses jsdrivproc, jsdrivlist;
+uses Windows, jsdrivproc, jsdrivlist;
 const
-  DBG=false;
+  {$IFDEF DEBUG}
+    DBG=true;
+  {$ELSE}
+    DBG=false;
+  {$ENDIF}
 
 {$R *.lfm}
 
@@ -93,13 +101,10 @@ var
   ndbg:integer;
 
 
-
-
 procedure LogTxt(msg:string);
 begin
-  MainForm.LogMemo.Append(msg);
+  if DBG then MainForm.LogMemo.Append(msg);
 end;
-
 
 
 procedure LogIPCMsg(p:TFpar);
@@ -121,31 +126,61 @@ begin
    MainForm.LogMemo.Append(msg);
 end;
 
-{ TCtrlForm }
 
-procedure TCtrlForm.ShowPlot;
+
+function FindServerWindow: HWND;
+const
+ MsgWndClassName: WideString = 'FPCMsgWindowCls';
 begin
-  // this device can serve only a single plot window
- // if (id>0) then exit;
-  Plotter.ShowInactive;
+ Result := FindWindowW(PWideChar(MsgWndClassName), PWideChar(SERVER_ID));
 end;
 
 
+function AlreadyRunning: boolean;
+var h:HWND;
+begin
+    h:= FindServerWindow;
+    result:=(h<>0);
+end;
+
+{ TCtrlForm }
+
+procedure TCtrlForm.ShowPlots;
+var i:integer;
+  cl:TJSDrivClient;
+begin
+
+  for i:=0 to clients.Count-1 do
+  begin
+    cl:=clients.FindClientI(i);
+    if (cl<>nil) then
+    begin
+       if (cl.Active) then cl.ShowAllPlots;
+    end;
+  end;
+end;
+
+{
 procedure TCtrlForm.ClosePlot;
 begin
   Plotter.Hide;
 end;
 
+}
+
 procedure TCtrlForm.UpdateContent;
 var s:string;
 begin
+  if (clients.Count=0) then
+      TimerPeek.Interval:=TIMER_DISCONNECTED
+  else
+      TimerPeek.Interval:=TIMER_CONNECTED;
+
   if ipcServer.Active then begin
-    SrvBtn.Caption := 'Stop server';
     TimerPeek.Enabled := true;
     s := 'running';
   end else
   begin
-    SrvBtn.Caption := 'Start server';
     TimerPeek.Enabled := false;
     s := 'stopped';
   end;
@@ -158,6 +193,7 @@ var
   YY,MM,DD, h,m,s,ms : Word;
   //i,ip:integer;
 begin
+  if (AlreadyRunning) then Application.Terminate;
   fClosing:=false;
   Sin:=TMemoryStream.create;
 
@@ -174,7 +210,6 @@ begin
   end;
    }
   // inti the engine
-  InitPlots;
   ipcServer.Global := true;
   ipcServer.ServerID:=SERVER_ID;
   ipcServer.Active:=true;
@@ -187,20 +222,28 @@ end;
 
 procedure TCtrlForm.FormDestroy(Sender: TObject);
 begin
-  ReleaseAllPlots;
+  clients.DeleteAll;
+  devices.FreeAll;
   Sin.free;
 end;
 
 procedure TCtrlForm.ExitBtnClick(Sender: TObject);
 begin
    //Application.Terminate;
-   fClosing:=true;;
+   fClosing:=true;
    Close;
 end;
 
-procedure TCtrlForm.Button1Click(Sender: TObject);
+
+
+procedure TCtrlForm.btnClearClick(Sender: TObject);
 begin
-  LogMemo.Clear;
+   LogMemo.Clear;
+end;
+
+procedure TCtrlForm.btnCloseClick(Sender: TObject);
+begin
+  Close;
 end;
 
 procedure TCtrlForm.CloseItemClick(Sender: TObject);
@@ -220,6 +263,7 @@ end;
 {Read message data to Sin stream and return number of bytes received.}
 function TCtrlForm.ReceiveData:QWord;
 begin
+  // LogMemo.Append('ReceiveData');
   Sin.Position:=0;
   Sin.Clear;
   if (ipcServer<>nil) then ipcServer.GetMessageData(Sin);
@@ -240,26 +284,15 @@ Retun the TJSDrivClient instance.
 }
 function TCtrlForm.ConnectClient(procid, appname:string):TJSDrivClient;
 var ipcClient:TJSDrivClient;
-     qry:TJSDrivMsg;
+   //  qry:TJSDrivMsg;
 begin
   ipcClient:=clients.GetClient(procid);
+  result:=nil;
   if (ipcClient<>nil) then
   begin
-    ipcClient.AppName:=appname;
-    ipcClient.ProcID:=procid;
-    if (ipcClient.Active) then ipcClient.Disconnect;
-    if (ipcClient.ServerRunning) then
-    begin
-        ipcClient.Connect;
-        if (ipcClient.Active) then
-        begin
-          qry:=TJSDrivMsg.MsgConnect(ipcClient.ProcID, ipcClient.AppName);
-          ipcClient.SendQuery(qry);
-        end;
-    end;
-    if (ipcClient.Active) then result:=ipcClient else result:=nil;
+    ipcClient.ConnectToClient(procid,AppName);
+    if ipcClient.Active then result:=ipcClient;
   end;
-
 end;
 
 
@@ -277,7 +310,6 @@ end;
 procedure TCtrlForm.ipcServerMessage(Sender: TObject);
 var
     qry:TJSDrivMsg;
-    srvID:string;
     ipcClient:TJSDrivClient;
 begin
   ReceiveData;
@@ -288,24 +320,20 @@ begin
     while (HasInputData) do
     begin
         qry.ReadFromStream(Sin);
-
+        // LogMemo.Append(format('HasData',[qry.MsgType]));
     { on connect request: reconnect to the client and ping back a message with the client ID }
         if (qry.MsgType=rcConnect) then
         begin
-          srvID:=CLIENT_ID+qry.Source;
+          LogTxt(format('Trying to connect [%s] [%s]',[qry.Source,qry.AppName]));
           ipcClient:=ConnectClient(qry.Source,qry.AppName);
           if (ipcClient<>nil) then
           begin
-            TimerPeek.Interval:=TIMER_CONNECTED;
             LogMemo.Append('Connected '+'['+ipcClient.ProcID+'] '+ipcClient.AppName);
           end else
           begin
-            LogMemo.Append('Connection from  '+srvID+' failed');
+            LogMemo.Append('Connection from  '+CLIENT_ID+qry.Source+' failed');
           end;
-          if (clients.Count=0) then
-             TimerPeek.Interval:=TIMER_DISCONNECTED
-          else
-             TimerPeek.Interval:=TIMER_CONNECTED;
+          UpdateContent;
     { on disconnect request: just disconnect }
         end else if (qry.MsgType=rcDisconnect) then
         begin
@@ -316,10 +344,7 @@ begin
                ipcClient:=nil;
                clients.DeleteClient(qry.Source);
           end;
-          if (clients.Count=0) then
-             TimerPeek.Interval:=TIMER_DISCONNECTED
-          else
-             TimerPeek.Interval:=TIMER_CONNECTED;
+          UpdateContent;
     { function call:
         call GrfExec with given parameters and send back returned values if requested.}
         end else if (qry.Param<>nil) then
@@ -346,12 +371,21 @@ end;
 
 procedure TCtrlForm.mnSettingsClick(Sender: TObject);
 begin
+  WindowState:=wsNormal;
   self.Show;
 end;
 
 procedure TCtrlForm.SrvBtnClick(Sender: TObject);
 begin
-  ipcServer.Active := (not ipcServer.Active);
+  // Only one running server is allowed on the system
+  if (not ipcServer.Active) and AlreadyRunning then
+  begin
+    ShowMessage('A running JSDRIV server is already found on the system.');
+  end else
+  begin
+    ipcServer.Active := (not ipcServer.Active);
+    if (not ipcServer.Active) then clients.DeleteAll;
+  end;
   UpdateContent;
 end;
 
@@ -360,10 +394,11 @@ var res:boolean;
 begin
   if ipcServer.Active then
   begin
-    res:=ipcServer.PeekMessage(20, true);
+    // LogMemo.Append('polling');
+    res:=ipcServer.PeekMessage(100, true);
     if (res) then
     begin
-    //  LogMemo.Append('received');
+      // LogMemo.Append('received');
     end;
 
   end;
@@ -374,6 +409,7 @@ var i:integer;
     info:TClientInfo;
     pinfo:TPlotInfo;
 begin
+  clients.DeleteInactive;
   if (self.visible) then
   //with (Sender as TTimer) do
   begin
@@ -419,7 +455,10 @@ end;
 
 procedure TCtrlForm.TrayIcon1Click(Sender: TObject);
 begin
-  Self.Show;
+  //Self.Show;
+  // Self.ShowPlots;
+  devices.ShowAllPlots;
+
 end;
 
 

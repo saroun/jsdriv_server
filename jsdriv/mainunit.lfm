@@ -1,7 +1,7 @@
 object CtrlForm: TCtrlForm
-  Left = 587
+  Left = 915
   Height = 293
-  Top = 160
+  Top = 68
   Width = 443
   Caption = 'JSDRIV server'
   ClientHeight = 293
@@ -7142,29 +7142,14 @@ object CtrlForm: TCtrlForm
     ClientHeight = 42
     ClientWidth = 443
     TabOrder = 0
-    object SrvBtn: TButton
-      AnchorSideLeft.Control = ExitBtn
-      AnchorSideLeft.Side = asrBottom
-      AnchorSideTop.Control = ExitBtn
-      AnchorSideTop.Side = asrCenter
-      AnchorSideBottom.Side = asrBottom
-      Left = 101
-      Height = 30
-      Top = 6
-      Width = 90
-      BorderSpacing.Left = 5
-      Caption = 'Start server'
-      OnClick = SrvBtnClick
-      TabOrder = 0
-    end
     object ExitBtn: TBitBtn
       AnchorSideLeft.Control = PanelBottom
-      AnchorSideTop.Control = SrvBtn
       AnchorSideTop.Side = asrBottom
       AnchorSideBottom.Control = PanelBottom
       AnchorSideBottom.Side = asrBottom
       Left = 6
       Height = 30
+      Hint = 'Terminate the server'
       Top = 6
       Width = 90
       Anchors = [akLeft, akBottom]
@@ -7209,19 +7194,35 @@ object CtrlForm: TCtrlForm
         B5FAB5B5B5FAB5B5B5FAB5B5B5FAB5B5B5FAB4B4B4EC00000000
       }
       OnClick = ExitBtnClick
-      TabOrder = 1
+      TabOrder = 0
     end
-    object Button1: TButton
-      AnchorSideLeft.Control = SrvBtn
+    object btnClear: TButton
+      AnchorSideLeft.Control = ExitBtn
       AnchorSideLeft.Side = asrBottom
-      AnchorSideTop.Control = SrvBtn
-      Left = 196
+      Left = 101
       Height = 30
       Top = 6
       Width = 90
       BorderSpacing.Left = 5
       Caption = 'Clear log'
-      OnClick = Button1Click
+      OnClick = btnClearClick
+      TabOrder = 1
+    end
+    object btnClose: TButton
+      AnchorSideLeft.Control = btnClear
+      AnchorSideLeft.Side = asrBottom
+      AnchorSideTop.Control = btnClear
+      AnchorSideRight.Control = PanelBottom
+      AnchorSideRight.Side = asrBottom
+      Left = 348
+      Height = 30
+      Top = 6
+      Width = 90
+      Anchors = [akTop, akRight]
+      BorderSpacing.Left = 4
+      BorderSpacing.Right = 5
+      Caption = 'Close'
+      OnClick = btnCloseClick
       TabOrder = 2
     end
   end
@@ -7239,9 +7240,9 @@ object CtrlForm: TCtrlForm
       Height = 249
       Top = 1
       Width = 441
-      ActivePage = TabLog
+      ActivePage = TabConn
       Align = alClient
-      TabIndex = 0
+      TabIndex = 1
       TabOrder = 0
       object TabLog: TTabSheet
         Caption = 'Logs'
@@ -7262,11 +7263,11 @@ object CtrlForm: TCtrlForm
       end
       object TabConn: TTabSheet
         Caption = 'Connections'
-        ClientHeight = 237
+        ClientHeight = 221
         ClientWidth = 433
         object GridConn: TStringGrid
           Left = 0
-          Height = 237
+          Height = 221
           Top = 0
           Width = 433
           Align = alClient
@@ -7292,7 +7293,7 @@ object CtrlForm: TCtrlForm
               ReadOnly = True
               SizePriority = 2
               Title.Caption = 'Application path'
-              Width = 262
+              Width = 279
             end>
           FixedCols = 0
           Options = [goFixedVertLine, goFixedHorzLine, goVertLine, goHorzLine, goRangeSelect, goColSizing, goSmoothScroll]
@@ -7300,7 +7301,7 @@ object CtrlForm: TCtrlForm
           ColWidths = (
             100
             50
-            262
+            279
           )
           Cells = (
             3
@@ -7318,11 +7319,12 @@ object CtrlForm: TCtrlForm
       end
       object TabDev: TTabSheet
         Caption = 'Devices'
-        ClientHeight = 237
+        ClientHeight = 221
         ClientWidth = 433
+        PopupMenu = PopupDevices
         object GridPlots: TStringGrid
           Left = 0
-          Height = 237
+          Height = 221
           Top = 0
           Width = 433
           Align = alClient
@@ -7367,7 +7369,7 @@ object CtrlForm: TCtrlForm
   object ipcServer: TSimpleIPCServer
     Active = False
     ThreadTimeOut = 50
-    Global = False
+    Global = True
     OnMessage = ipcServerMessage
     MaxQueue = 0
     MaxAction = ipcmoaNone

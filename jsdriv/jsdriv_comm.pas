@@ -40,7 +40,7 @@ type
       {Close given device. Deselect if neceessary.}
       procedure CloseDevice(index:integer);
       {Close all devices open by this client}
-      procedure CloseAllDevices;
+      procedure FreeAllDevices;
       {Deselect any previously selected device}
       procedure DeselectDevices;
     public
@@ -56,7 +56,12 @@ type
       function SelectDevice(id:integer):boolean;
       {Close currently selected window}
       procedure CloseSelected;
-
+      {Show all client's plots}
+      procedure ShowAllPlots;
+      {Connect this server-side client to the calling client's server}
+      procedure ConnectToClient(procid, appname:string);
+      {Disconnect this server-side client from the calling client's server}
+      procedure DisconnectFromClient;
       property AppName:string read fAppName write fAppName;
       property ProcID:string read fProcID write fProcID;
       property Selected:TPlotter read fSelected;
@@ -65,6 +70,7 @@ type
 
     TClientList = class(TStringList)
     public
+      {Get a record with information about client with given index}
       function getClientInfo(index:integer):TClientInfo;
       {Find an existing client in the clients list or create a new one}
       function GetClient(AName:string):TJSDrivClient;
@@ -74,7 +80,10 @@ type
       function FindClient(AName:string):TJSDrivClient;
       {Delete and destroy a client from the list}
       procedure DeleteClient(AName:string);
+      {Delete and destroy all clients}
       procedure DeleteAll;
+      {Delete all inactive clients}
+      procedure DeleteInactive;
       destructor Destroy; override;
     end;
 
@@ -172,12 +181,34 @@ begin
   Clear;
 end;
 
+
+{Delete all inactive clients}
+procedure TClientList.DeleteInactive;
+var idx,cnt:integer;
+    c:TJSDrivClient;
+begin
+  cnt:=Count-1;
+  for idx:=cnt downto 0 do
+  begin
+    if (Objects[idx]<>nil) then
+    begin
+        c:=(Objects[idx] as TJSDrivClient);
+        if (not c.ServerRunning) then
+        begin
+          c.free;
+          Delete(idx);
+        end;
+    end;
+  end;
+end;
+
 destructor TClientList.Destroy;
 begin
   DeleteAll;
   inherited destroy;
 end;
 
+{                          TJSDrivClient                          }
 
 constructor TJSDrivClient.create(AOwner: TComponent);
 begin
@@ -200,7 +231,7 @@ end;
 destructor TJSDrivClient.destroy;
 begin
   try
-     CloseAllDevices;
+     FreeAllDevices;
      if (Active) then Disconnect;
      Sout.free;
   finally
@@ -226,10 +257,14 @@ var
     PL:TPlotter;
 begin
   i:=Devices.OpenWorkstation;
-  if (i>=0) then
+  if (i>0) then
   begin
     PL:=Devices.FindByID(i);
-    plots.Add(PL);
+    if (PL <>nil) then
+    begin
+         PL.IsUsed:=true;
+         if (plots.IndexOf(PL)<0) then plots.Add(PL);
+    end;
   end;
   result:=i;
 end;
@@ -253,6 +288,7 @@ begin
   DeselectDevices;
   // mark it as selected
   fSelected:=PL;
+ // PL.FormStyle:=fsSystemStayOnTop;
   fSelected.PlotSelect;
   result:=true;
 end;
@@ -285,17 +321,68 @@ begin
      PL:=TPlotter(plots.Items[index]);
      if (PL = fSelected) then DeselectDevices;
      PL.PlotClose;
+     PL.IsUsed:=false;
      plots.Delete(index);
      plots.Pack;
   end;
 end;
 
-{Close all devices open by this client}
-procedure TJSDrivClient.CloseAllDevices;
+{Destroy all devices open by this client}
+procedure TJSDrivClient.FreeAllDevices;
 begin
+  devices.FreeDeviceList(plots);
   while plots.count>0 do CloseDevice(plots.count-1);
 end;
 
+{Show all client's plots}
+procedure TJSDrivClient.ShowAllPlots;
+var i:integer;
+    PL:TPlotter;
+begin
+  for i:=0 to plots.Count-1 do
+  begin
+    PL:=TPlotter(plots.Items[i]);
+    PL.ShowInactive;
+  end;
+end;
+
+
+{Connect this server-side client to the calling client's server}
+procedure TJSDrivClient.ConnectToClient(procid, appname:string);
+var qry:TJSDrivMsg;
+begin
+  self.AppName:=appname;
+  self.ProcID:=procid;
+  if Active then Disconnect;
+  if (ServerRunning) then
+  begin
+      Connect;
+      if Active then
+      begin
+        qry:=TJSDrivMsg.MsgConnect(ProcID, AppName);
+        SendQuery(qry);
+      end;
+  end;
+end;
+
+{Disconnect this server-side client from the calling client's server}
+procedure TJSDrivClient.DisconnectFromClient;
+var qry:TJSDrivMsg;
+begin
+  if (Active) then
+  begin
+   // Send server a message to disconnect
+     qry:=TJSDrivMsg.MsgDisconnect(ProcID);
+     try
+        SendQuery(qry);
+     finally
+        qry.free;
+        // disconnect form the server
+        Disconnect;
+        Active:=false;
+     end;
+   end;
+end;
 
 initialization
     clients:=TClientList.Create;

@@ -73,6 +73,11 @@
         <ExecutableType Value="Library"/>
       </Options>
     </Linking>
+    <Other>
+      <OtherDefines Count="1">
+        <Define0 Value="DEBUG"/>
+      </OtherDefines>
+    </Other>
   </CompilerOptions>
   <Debugging>
     <Exceptions Count="3">

@@ -30,7 +30,7 @@ uses
 
 const
   sQWord = SizeOf(QWord);
-  sTLen = SizeOf(size_t);
+  sTLen = SizeOf(integer);
   sChar = SizeOf(string[1]);
   sReal = SizeOf(single); // should correspond to Fortran REAL*4
 
@@ -57,15 +57,15 @@ type
   public
     id: QWord;
     ifunc:DWord;
-    nbuf:size_t;
-    nchar:size_t;
+    nbuf:integer;
+    nchar:integer;
     rbuf:TDynArray;
     cbuf:PChar;
     constructor Create;
     destructor Destroy; override;
     procedure Assign(source:TFpar);
-    procedure WriteToBuffer(var buf;var lbuf:size_t;chr:PChar;var lchr:size_t);
-    procedure ReadFromBuffer(var buf; lbuf:size_t;chr:PChar;lchr:size_t);
+    procedure WriteToBuffer(var buf;var lbuf:integer;chr:PChar;var lchr:integer);
+    procedure ReadFromBuffer(var buf; lbuf:integer;chr:PChar;lchr:integer);
     procedure ReadFromStream(S:TStream);
     procedure WriteToStream(S:TStream);
   end;
@@ -212,7 +212,7 @@ begin
   nbuf:=source.nbuf;
   nchar:=source.nchar;
   SetLength(rbuf,source.nbuf);
-  Move(rbuf[0], source.rbuf[0], nbuf*sReal);
+  if (nbuf>0)  then Move(rbuf[0], source.rbuf[0], nbuf*sReal);
   StrLCopy(cbuf,source.cbuf,nchar)
 end;
 
@@ -223,21 +223,21 @@ begin
   inherited;
 end;
 
-procedure TFpar.WriteToBuffer(var buf;var lbuf:size_t;chr:PChar;var lchr:size_t);
+procedure TFpar.WriteToBuffer(var buf;var lbuf:integer;chr:PChar;var lchr:integer);
 begin
    lbuf:=self.nbuf;
    lchr:=self.nchar;
-   Move(self.rbuf[0], buf, self.nbuf*sReal);
+   if (lbuf>0)  then Move(self.rbuf[0], buf, self.nbuf*sReal);
    StrLCopy(chr,cbuf,lchr)
 end;
 
-procedure TFpar.ReadFromBuffer(var buf; lbuf:size_t;chr:PChar;lchr:size_t);
+procedure TFpar.ReadFromBuffer(var buf; lbuf:integer;chr:PChar;lchr:integer);
 // note: chr may not be properly terminated by #0, it can be defined in a fortran module ...
 begin
   SetLength(self.rbuf,lbuf);
   self.nbuf:=lbuf;
   self.nchar:=lchr;
-  Move(buf, self.rbuf[0], lbuf*sReal);
+  if (lbuf>0) then Move(buf, self.rbuf[0], lbuf*sReal);
   StrLCopy(self.cbuf,chr,min(lchr,MAXCHAR));
 end;
 
@@ -249,7 +249,7 @@ begin
     S.ReadBuffer(nbuf,sTLen);
     S.ReadBuffer(nchar,sTLen);
     SetLength(rbuf,nbuf);
-    S.ReadBuffer(rbuf[0],nbuf*sReal);
+    if (nbuf>0) then S.ReadBuffer(rbuf[0],nbuf*sReal);
     text:=S.ReadAnsiString;
     StrLCopy(self.cbuf,PChar(text),min(nchar,MAXCHAR));
 end;
@@ -260,7 +260,7 @@ begin
   S.WriteDWord(ifunc);
   S.WriteBuffer(nbuf,sTLen);
   S.WriteBuffer(nchar,sTLen);
-  S.WriteBuffer(rbuf[0],nbuf*sReal);
+  if (nbuf>0) then S.WriteBuffer(rbuf[0],nbuf*sReal);
   S.WriteAnsiString(string(cbuf));
 end;
 
@@ -295,6 +295,7 @@ begin
   try
     par.ReadFromBuffer(RBUF, NBUF, CHR, CLEN);
   except
+    writeln('Error: cannot create TFPar record.') ;
     par.free;
     par:=nil;
   end;

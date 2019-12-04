@@ -1,7 +1,7 @@
 object Plotter: TPlotter
-  Left = 345
+  Left = 548
   Height = 465
-  Top = 125
+  Top = 205
   Width = 371
   HorzScrollBar.Page = 90
   VertScrollBar.Page = 113

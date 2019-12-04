@@ -83,6 +83,7 @@ type
   private
      procedure SetImageCursor;
   protected
+     fUsed:boolean;
      fPID: integer;
      fBuf: TBitmap; // buffer for bitmap image
      fPlotState: TPlotStates;
@@ -94,6 +95,7 @@ type
      fPolygonV: array of TPoint; // polygon vertices
      fPolygonN: longint; // number of polygon vertices
      needRefresh: boolean; // flag allowing to refresh image in FlushImage
+     fStatic: boolean; // flag for static device: only flush buffer on PGEND (ifunc=10)
      {Setters ...}
      procedure SetPlotState(Value: TPlotStates);
      procedure SetClPen(Value: TColor);
@@ -169,6 +171,8 @@ type
      property PlotState: TPlotStates read fPlotState write SetPlotState;
      property IsOpen:boolean read getIsOpen;
      property IsSelected:boolean read getIsSelected;
+     property IsUsed:boolean read fUsed write fUsed;
+     property  IsStatic:boolean read fStatic write fStatic;
      // pen attributes etc.
      property ClBack: TColor read fClBack write fClBack;
      property ClPen: TColor read fClPen write SetClPen;
@@ -177,17 +181,17 @@ type
      property PlotArea: TRect read fPlotArea;
   end;
 
-var
-  Plotter: TPlotter;
-  AppName: string;
 
 
 implementation
 uses jsdrivlist, jsdriv_comm, Math, MainUnit;
 
 const
-  DBG=false;
-
+  {$IFDEF DEBUG}
+    DBG=true;
+  {$ELSE}
+    DBG=false;
+  {$ENDIF}
 {$R *.lfm}
 
 
@@ -279,13 +283,14 @@ begin
   if (Sender is TPlotter) then
   begin
     PL:=Sender as TPlotter;
-    if (PL.isOpen) then
+    if (PL.isUsed) then
     begin
       CloseAction := caMinimize;
     end else
     begin
-      devices.DeletePlot(PL);
-      CloseAction := caFree;
+     // devices.DeletePlot(PL);
+     // CloseAction := caFree;
+      CloseAction := caHide;
     end;
   end;
 end;
@@ -313,6 +318,7 @@ begin
   FormStyle := fsStayOnTop;
   fPID := 0;
   fPlotState := [];
+  fStatic := false;
   InitColors;
   // create bitmap buffer
   fBuf := TBitmap.Create;
@@ -326,7 +332,7 @@ begin
   ClientWidth:=sz.x+2*Margin.X;
   ClientHeight:=sz.y+2*Margin.Y;
   DefineVieport(0,0);  // sets plot area to fit the client size and sets buffer bitmap size.
-  FlushImage; // draw empty plot, just background ...
+  //FlushImage; // draw empty plot, just background ...
 end;
 
 procedure TPlotter.FormDestroy(Sender: TObject);
@@ -457,7 +463,7 @@ procedure TPlotter.PlotStart(w, h:longint);  // 11: Begin plot
 begin
   //needrefresh:=true;
   LogInfo('PlotStart '+BoolToStr(needrefresh));
-  FlushImage;
+  //FlushImage;
   DefineVieport(w, h);
   UpdateStatus(0,format('Plot size: %dx%d',[fBuf.Width,fBuf.Height]));
   PlotState := PlotState + [psDrawing];
@@ -470,12 +476,10 @@ begin
   AdjustClientSize;
   //needrefresh:=true;
   LogInfo('PlotEnd '+BoolToStr(needrefresh));
-
   FlushImage;
-
   PlotState := PlotState - [psDrawing];
   ShowInactive;
- // BringToFront;
+  BringToFront;
 end;
 
 
@@ -589,8 +593,8 @@ begin
        Image.Invalidate;
        Image.Refresh;
        needRefresh:=false;
+       Invalidate;
   end;
-  Invalidate;
 end;
 
 procedure TPlotter.PlotClr;
@@ -726,12 +730,14 @@ begin
         if x2 >= fPlotArea.Width then x2 := fPlotArea.Width-1;
         B.Width := x2 - x1 + 1;
         pt0:=XYToPixel(x1,y1);
+        B.BeginUpdate(true);
         for i := x1 to x2 do
         begin
           ic := round(rec[i - x1 + 2]);
           pt:=XYToPixel(i,y1);
-          B.Canvas.pixels[pt.x, pt.y] := RGBPal[ic];
+          B.Canvas.pixels[pt.x-pt0.x, 0] := RGBPal[ic];
         end;
+        B.EndUpdate(true);
         fBuf.canvas.Draw(pt0.x, pt0.y, B);
       finally
         B.Free;
