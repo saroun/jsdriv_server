@@ -5,6 +5,7 @@
 *.o
 *.mod
 *.def
+*.res
 lib
 bin
 backup
